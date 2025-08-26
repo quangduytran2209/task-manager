@@ -1,0 +1,42 @@
+version: "3.9"                            #version docker_compose
+
+services:                                 #Format all service need to run
+  db:                                     #service database (postgres)
+    image: postgres:15                    #img postgres from dockerhub
+    container_name: taskmanage_db         #name container on docker
+    restart: always                       #When container dead auto restart
+    environment:                          #create variable environment for postgres
+      POSTGRES_USER: taskuser
+      POSTGRES_PASSWORD: taskpass
+      POSTGRES_DB: taskbd
+    ports:                                # host port:container port
+      - "5432:5432"
+    volumes:                              #save date postgres on volumes in docker
+      - db_data:/var/lib/postgresql/data
+
+  backend:                                #Service backend (Go echo)
+    build: ./backend                      #buid from folder backend (where has dockerfile)
+    container_name: taskmanage_backend    #name container on docker
+    restart: always 
+    depends_on:                           #When container dead auto restart after db restart successful
+      - db
+    environment:                          #create variable environment for backend (Go)
+      DB_HOST: db                         #host name  == name service "db"
+      DB_USER: taskuser
+      DB_PASSWORD: taskpass
+      DB_NAME: taskbd
+      DB_PORT: 5432
+    ports:                                #host port : container port
+      - "8080:8080"
+    volumes:                              #mount date to contanier for dev faster
+      - ./backend:/main
+
+  frontend:
+    build: ./frontend
+    container_name: task-frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+volumes:                                  #format volumes (save date portgres)
+  db_data:
